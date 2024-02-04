@@ -7,9 +7,11 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    jcenter()
 }
 
 dependencies {
+    implementation("com.github.promeg:tinypinyin:2.0.3")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
 }
 
