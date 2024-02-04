@@ -2,11 +2,12 @@ import com.github.promeg.pinyinhelper.Pinyin
 import java.io.File
 import java.io.InputStream
 import java.io.SequenceInputStream
+import java.nio.file.Path
 import java.util.*
 import javax.sound.sampled.AudioInputStream
 import javax.sound.sampled.AudioSystem
 
-fun huoZiYinShua(voiceParts: List<VoicePart>): File {
+private fun huoZiYinShua(voiceParts: List<VoicePart>, outputFilePath: Path): File {
     val syllableFiles = voiceParts.mapNotNull { createTempFileIfNotExist("${it.str}.wav", getAudio(it)) }
     if (voiceParts.isEmpty()) {
         throw Exception("No syllable found")
@@ -26,7 +27,7 @@ fun huoZiYinShua(voiceParts: List<VoicePart>): File {
         })
 
 
-        val newFile = tempDir.resolve("output.wav")
+        val newFile = outputFilePath.resolve("output.wav").toFile()
 
         AudioSystem.write(
             AudioInputStream(
@@ -133,11 +134,14 @@ private fun parsePinyin(input: String): List<VoicePart> {
     return voicePartList
 }
 
-fun main() {
-    val s = "大家好，我是说的道理，今天来点大家想看的东西"
+@JvmOverloads
+fun huoZiYinShua(s: String, outputFilePath: Path = tempDir.toPath()) {
     val voicePartList = parsePinyin(s)
-    val file = huoZiYinShua(voicePartList)
-    println(file.absolutePath)
+    val file = huoZiYinShua(voicePartList, outputFilePath)
 }
 
 data class VoicePart(val str: String, val isYuanShengDaDie: Boolean)
+
+private fun main() {
+    huoZiYinShua("段位所以他一起不配是吧")
+}
