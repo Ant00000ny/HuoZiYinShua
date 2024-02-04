@@ -59,7 +59,7 @@ fun createTempFileIfNotExist(fileName: String, content: ByteArray?): File? {
 
 fun getAudio(name: String): ByteArray? {
     val inputStream = object {}.javaClass.classLoader
-        .getResourceAsStream("yuanshengdadie/$name")
+        .getResourceAsStream("syllable/$name")
         ?: return null
     return inputStream.readBytes()
 }
