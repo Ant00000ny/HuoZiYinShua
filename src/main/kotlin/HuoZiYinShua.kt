@@ -45,7 +45,7 @@ fun huoZiYinShua(voiceParts: List<VoicePart>): File {
     }
 }
 
-fun createTempFileIfNotExist(fileName: String, content: ByteArray?): File? {
+private fun createTempFileIfNotExist(fileName: String, content: ByteArray?): File? {
     content ?: return null
 
     val file = tempDir.resolve(fileName)
@@ -54,7 +54,7 @@ fun createTempFileIfNotExist(fileName: String, content: ByteArray?): File? {
     return file
 }
 
-fun getAudio(voicePart: VoicePart): ByteArray? {
+private fun getAudio(voicePart: VoicePart): ByteArray? {
     val inputStream = if (voicePart.isYuanShengDaDie) {
         object {}.javaClass.classLoader
             .getResourceAsStream("ysdd/${voicePart.str}.wav")
@@ -68,7 +68,7 @@ fun getAudio(voicePart: VoicePart): ByteArray? {
     return inputStream.readBytes()
 }
 
-fun parsePinyin(input: String): List<VoicePart> {
+private fun parsePinyin(input: String): List<VoicePart> {
     val voicePartList = mutableListOf(VoicePart(input, false))
 
     yuanShengDaDie.forEach { (str, ysddFileName) ->
@@ -86,7 +86,7 @@ fun parsePinyin(input: String): List<VoicePart> {
 
             listIterator.remove()
 
-            part.str.substring(0, range.first)
+            part.str.substring(range.last + 1)
                 .takeIf { it.isNotEmpty() }
                 ?.let {
                     listIterator.add(VoicePart(it, false))
@@ -96,7 +96,7 @@ fun parsePinyin(input: String): List<VoicePart> {
             listIterator.add(VoicePart(ysddFileName, true))
             listIterator.previous()
 
-            part.str.substring(range.last + 1)
+            part.str.substring(0, range.first)
                 .takeIf { it.isNotEmpty() }
                 ?.let {
                     listIterator.add(VoicePart(it, false))
@@ -134,7 +134,7 @@ fun parsePinyin(input: String): List<VoicePart> {
 }
 
 fun main() {
-    val s = "说的道理"
+    val s = "大家好，我是说的道理，今天来点大家想看的东西"
     val voicePartList = parsePinyin(s)
     val file = huoZiYinShua(voicePartList)
     println(file.absolutePath)
