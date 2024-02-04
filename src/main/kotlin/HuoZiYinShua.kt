@@ -126,6 +126,7 @@ private fun parsePinyin(input: String): List<VoicePart> {
                 }
             }
 
+        listIterator.remove()
         pinyin.forEach {
             listIterator.add(VoicePart(it, false))
         }
@@ -143,5 +144,5 @@ fun huoZiYinShua(s: String, outputFilePath: Path = tempDir.toPath()) {
 data class VoicePart(val str: String, val isYuanShengDaDie: Boolean)
 
 private fun main() {
-    huoZiYinShua("段位所以他一起不配是吧")
+    huoZiYinShua("一五")
 }

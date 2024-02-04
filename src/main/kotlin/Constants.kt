@@ -15,7 +15,7 @@ val alterSyllables = mapOf(
     "h" to "ai chi",
     "i" to "ai",
     "j" to "zhei",
-    "k" to "kei",
+    "k" to "kai",
     "l" to "ai lu",
     "m" to "ai mu",
     "n" to "en",
@@ -31,6 +31,7 @@ val alterSyllables = mapOf(
     "x" to "ai ke si",
     "y" to "wai",
     "z" to "zei",
+    "." to "dian",
     "0" to "ling",
     "1" to "yi",
     "2" to "er",
@@ -40,7 +41,7 @@ val alterSyllables = mapOf(
     "6" to "liu",
     "7" to "qi",
     "8" to "ba",
-    "9" to "jiu"
+    "9" to "jiu",
 )
     .map { (k, v) -> k to v.split(" ") }
     .toMap()
