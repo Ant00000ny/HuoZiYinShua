@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "top.ant00000ny"
-version = "1.0-SNAPSHOT"
+version = "1.0"
 
 repositories {
     mavenCentral()
