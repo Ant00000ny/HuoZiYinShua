@@ -1,56 +1,63 @@
 import com.github.promeg.pinyinhelper.Pinyin
 import java.io.File
-import java.io.InputStream
-import java.io.SequenceInputStream
-import java.nio.file.Path
-import java.util.*
-import javax.sound.sampled.AudioFormat
-import javax.sound.sampled.AudioInputStream
-import javax.sound.sampled.AudioSystem
+import java.time.Instant
+import java.util.concurrent.TimeUnit
+import java.util.function.Consumer
 
-private fun huoZiYinShua(voiceParts: List<VoicePart>, outputFilePath: Path, reverse: Boolean = false): File {
-    val syllableFiles = voiceParts.mapNotNull { createTempFileIfNotExist("${it.str}.wav", getAudio(it)) }
+
+/**
+ * 拼接音频片段
+ */
+private fun concatAudio(voiceParts: List<VoicePart>): ByteArray? {
+    val files = voiceParts.mapNotNull { getAudio(it) }
     if (voiceParts.isEmpty()) {
         throw Exception("No syllable found")
     }
-    val audioInputStreams = syllableFiles.map { AudioSystem.getAudioInputStream(it) }
-    val format = audioInputStreams.first().format
-    val totalFrameLength = audioInputStreams.sumOf { it.frameLength }
 
-    try {
-        val sequenceInputStream = SequenceInputStream(object : Enumeration<InputStream> {
-            private val iterator = audioInputStreams.iterator()
+    val outputFile = tempDir.resolve("${Instant.now().toEpochMilli()}-result.wav")
+    val command = run {
+        val command = mutableListOf<String>()
+        command.add("ffmpeg")
 
-            override fun hasMoreElements(): Boolean = iterator.hasNext()
-
-            override fun nextElement(): InputStream = iterator.next()
+        files.forEach(Consumer { filePath ->
+            command.add("-i")
+            command.add(filePath.absolutePath)
         })
 
 
-        val newFile = outputFilePath.resolve("output.wav").toFile()
-
-        AudioSystem.write(
-            AudioInputStream(
-                sequenceInputStream,
-                format,
-                totalFrameLength
-            ),
-            AudioSystem.getAudioFileFormat(syllableFiles.first()).type,
-            newFile
-        )
-
-        if (reverse) {
-            val audioBytes = newFile.readBytes()
-            newFile.writeBytes(reverseAudioBytes(audioBytes, format))
+        val filterComplex = StringBuilder()
+        files.forEachIndexed { i, _ ->
+            filterComplex.append(String.format("[%d:0]", i))
         }
+        filterComplex.append(String.format("concat=n=%d:v=0:a=1[out]", files.size))
 
-        return newFile
-    } finally {
-        audioInputStreams.forEach { it.close() }
-        syllableFiles.forEach { it.delete() }
+        command.add("-filter_complex")
+        command.add(filterComplex.toString())
+        command.add("-map")
+        command.add("[out]")
+        command.add(outputFile.absolutePath)
+        command
     }
+
+    val processBuilder = ProcessBuilder(command)
+    val process = processBuilder
+        .redirectError(ProcessBuilder.Redirect.INHERIT)
+        .start()
+    if (!process.waitFor(15, TimeUnit.SECONDS)) {
+        process.destroyForcibly()
+        return null
+    }
+
+    if (process.exitValue() != 0) {
+        return null
+    }
+
+    return outputFile.readBytes()
 }
 
+/**
+ * 在 [tempDir] 下创建临时文件
+ */
 private fun createTempFileIfNotExist(fileName: String, content: ByteArray?): File? {
     content ?: return null
 
@@ -60,19 +67,35 @@ private fun createTempFileIfNotExist(fileName: String, content: ByteArray?): Fil
     return file
 }
 
-private fun getAudio(voicePart: VoicePart): ByteArray {
-    val classLoader = object {}.javaClass.classLoader
-    val inputStream = if (voicePart.isYuanShengDaDie) {
-        classLoader.getResourceAsStream("ysdd/${voicePart.str}.wav")
-            ?: classLoader.getResourceAsStream("syllable/_.wav")
-    } else {
-        classLoader.getResourceAsStream("syllable/${voicePart.str}.wav")
-            ?: classLoader.getResourceAsStream("syllable/_.wav")
+/**
+ * 根据拼音片段获取音频
+ */
+private fun getAudio(voicePart: VoicePart): File {
+    val filename = "${voicePart.str}.wav"
+    val tempFile = tempDir.resolve(filename)
+    if (tempFile.exists()) {
+        return tempFile
     }
 
-    return inputStream.readBytes()
+    val classLoader = object {}.javaClass.classLoader
+    val inputStream = if (voicePart.isYuanShengDaDie) {
+        classLoader.getResourceAsStream("ysdd/$filename")
+            ?: classLoader.getResourceAsStream("syllable/_.wav")
+    } else {
+        classLoader.getResourceAsStream("syllable/$filename")
+            ?: classLoader.getResourceAsStream("syllable/_.wav")
+    }
+    tempFile
+        .also { it.createNewFile() }
+        .writeBytes(inputStream.use { it.readAllBytes() })
+
+
+    return tempFile
 }
 
+/**
+ * 原声大碟替换、单字替换
+ */
 private fun parsePinyin(input: String): List<VoicePart> {
     val voicePartList = mutableListOf(VoicePart(input, false))
 
@@ -139,29 +162,9 @@ private fun parsePinyin(input: String): List<VoicePart> {
     return voicePartList
 }
 
-private fun reverseAudioBytes(audioBytes: ByteArray, format: AudioFormat): ByteArray {
-    val reversedBytes = audioBytes.copyOf()
-    val bytesPerSample = format.sampleSizeInBits / 8
-    val numSamples = reversedBytes.size / bytesPerSample
-    for (i in 0 until numSamples / 2) {
-        for (j in 0 until bytesPerSample) {
-            val temp = reversedBytes[i * bytesPerSample + j]
-            reversedBytes[i * bytesPerSample + j] = reversedBytes[(numSamples - 1 - i) * bytesPerSample + j]
-            reversedBytes[(numSamples - 1 - i) * bytesPerSample + j] = temp
-        }
-    }
-    return reversedBytes
-}
-
-
-@JvmOverloads
-fun huoZiYinShua(s: String, outputFilePath: Path = tempDir.toPath(), reverse: Boolean = false) {
+fun huoZiYinShua(s: String) {
     val voicePartList = parsePinyin(s)
-    val file = huoZiYinShua(voicePartList, outputFilePath, reverse)
+    concatAudio(voicePartList) ?: return
 }
 
 data class VoicePart(val str: String, val isYuanShengDaDie: Boolean)
-
-private fun main() {
-    huoZiYinShua("你知道的，我一直是夜鹿的粉丝，至于猪头麻油，希望他们在上海一切顺利")
-}

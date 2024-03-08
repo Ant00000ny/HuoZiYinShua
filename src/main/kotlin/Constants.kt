@@ -1,7 +1,10 @@
 import java.io.File
 import java.nio.file.Paths
 
-val tempDir: File = Paths.get(System.getProperty("user.dir")).toFile()
+val tempDir: File = Paths.get(System.getProperty("user.dir"))
+    .resolve("HuoZiYinShua-temp")
+    .toFile()
+    .also { it.mkdirs() }
 
 
 val alterSyllables = mapOf(

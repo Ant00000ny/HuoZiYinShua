@@ -12,8 +12,8 @@ repositories {
 
 dependencies {
     implementation("com.github.promeg:tinypinyin:2.0.3")
-    implementation("ws.schild:jave-core:3.4.0")
-    implementation("ws.schild:jave-nativebin-linux64:3.4.0")
+    implementation("org.slf4j:slf4j-api:2.0.9")
+    implementation("org.slf4j:slf4j-simple:2.0.9")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
 }
 
