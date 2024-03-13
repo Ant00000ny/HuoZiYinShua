@@ -9,7 +9,7 @@ import java.util.function.Consumer
  * 拼接音频片段
  */
 private fun concatAudio(voiceParts: List<VoicePart>): ByteArray? {
-    val files = voiceParts.mapNotNull { getAudio(it) }
+    val files = voiceParts.map { getAudio(it) }
     if (voiceParts.isEmpty()) {
         throw Exception("No syllable found")
     }
@@ -27,9 +27,9 @@ private fun concatAudio(voiceParts: List<VoicePart>): ByteArray? {
 
         val filterComplex = StringBuilder()
         files.forEachIndexed { i, _ ->
-            filterComplex.append(String.format("[%d:0]", i))
+            filterComplex.append("[$i:0]")
         }
-        filterComplex.append(String.format("concat=n=%d:v=0:a=1[out]", files.size))
+        filterComplex.append("concat=n=${files.size}:v=0:a=1[out]", )
 
         command.add("-filter_complex")
         command.add(filterComplex.toString())
@@ -162,9 +162,9 @@ private fun parsePinyin(input: String): List<VoicePart> {
     return voicePartList
 }
 
-fun huoZiYinShua(s: String) {
+fun huoZiYinShua(s: String): ByteArray? {
     val voicePartList = parsePinyin(s)
-    concatAudio(voicePartList) ?: return
+    return concatAudio(voicePartList)
 }
 
 data class VoicePart(val str: String, val isYuanShengDaDie: Boolean)
