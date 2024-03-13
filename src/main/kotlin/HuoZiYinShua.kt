@@ -56,18 +56,6 @@ private fun concatAudio(voiceParts: List<VoicePart>): ByteArray? {
 }
 
 /**
- * 在 [tempDir] 下创建临时文件
- */
-private fun createTempFileIfNotExist(fileName: String, content: ByteArray?): File? {
-    content ?: return null
-
-    val file = tempDir.resolve(fileName)
-    if (!file.exists()) file.writeBytes(content)
-
-    return file
-}
-
-/**
  * 根据拼音片段获取音频
  */
 private fun getAudio(voicePart: VoicePart): File {
